@@ -4,6 +4,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import { useEffect } from "react";
 import ScrollToTop from "react-scroll-to-top";
+import ThankYouPage from "./pages/ThankYouPage";
 
 function App() {
   useEffect(() => {
@@ -18,6 +19,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route exact path='/' element={<HomeFour />} />
+         <Route exact path='/thankyou' element={<ThankYouPage />} />
       </Routes>
       <ScrollToTop smooth color='#246BFD' />
     </BrowserRouter>
