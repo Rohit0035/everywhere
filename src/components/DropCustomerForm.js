@@ -15,7 +15,7 @@ const DropCustomerForm = () => {
     fullName: "",
     email: "",
     phone: "",
-    storageLocation: "Sagar, Madhya Pradesh",
+    storageLocation: "",
     dropoffDate: "",
     dropoffTime: "",
     pickupDate: "",
