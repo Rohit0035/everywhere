@@ -60,7 +60,7 @@ const PickupCustomerForm = () => {
         color: 'danger',
         icon: '❌'
       },
-      'ARRIVED': {
+      'RECEIVED': {
         allowed: true,
         message: '✨ Great! Your items have arrived and are safely stored. You can now request pickup.',
         color: 'success',

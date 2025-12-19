@@ -16,8 +16,8 @@ const DropCustomerForm = () => {
     email: "",
     phone: "",
     storageLocation: "",
-    dropoffDate: "",
-    dropoffTime: "",
+    dropOffDate: "",
+    dropOffTime: "",
     pickupDate: "",
     pickupTime: "",
     noOfItems: 1,
@@ -148,8 +148,8 @@ const DropCustomerForm = () => {
         <input
           type="date"
           className="form-control"
-          name="dropoffDate"
-          value={formData.dropoffDate}
+          name="dropOffDate"
+          value={formData.dropOffDate}
           onChange={handleChange}
           required
         />
@@ -161,8 +161,8 @@ const DropCustomerForm = () => {
         <input
           type="time"
           className="form-control"
-          name="dropoffTime"
-          value={formData.dropoffTime}
+          name="dropOffTime"
+          value={formData.dropOffTime}
           onChange={handleChange}
           required
         />
