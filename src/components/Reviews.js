@@ -29,34 +29,34 @@ const Reviews = () => {
 
   const reviews = [
     {
-      name: "Rohit Sharma",
+      name: "Ankit Malviya",
       comment:
-        "Excellent service! Booked online and dropped off my luggage in 5 minutes. Super helpful for my short layover in Bangalore.",
+        "Very useful service in Indore! Dropped my luggage near Rajwada before exploring the city. Smooth process and polite staff.",
     },
     {
-      name: "Priya Verma",
+      name: "Pooja Jain",
       comment:
-        "Loved the pickup facility. The delivery was on time and my bags were safe. This is the future of luggage storage!",
+        "I had a late train from Indore Junction, so I stored my bags safely and enjoyed shopping at Sarafa Bazaar stress-free.",
     },
     {
-      name: "Amit Joshi",
+      name: "Rahul Patidar",
       comment:
-        "Booked storage for my scooter during my trip. Was impressed with the secure vehicle storage and camera monitoring.",
+        "Booked online and stored my luggage near Vijay Nagar. Everything was secure and the pickup was super quick.",
     },
     {
-      name: "Sneha Kapoor",
+      name: "Neha Sharma",
       comment:
-        "Affordable and super easy to use! Booking took seconds and the location was right next to the railway station.",
+        "Affordable and reliable luggage storage in Indore. Helped me a lot during my short business trip.",
     },
     {
-      name: "Karan Mehta",
+      name: "Saurabh Verma",
       comment:
-        "Was traveling with bulky equipment. Glad I found EveryWhere. The oversized item storage was a blessing.",
+        "I used their service near Devi Ahilya Bai Holkar Airport. Easy booking, safe storage, and on-time delivery.",
     },
     {
-      name: "Neha Reddy",
+      name: "Kritika Agrawal",
       comment:
-        "Booked online, dropped my luggage at a hotel partner, picked it back later — smooth and safe experience.",
+        "Great experience! Stored my bags near Palasia while attending an event. Highly recommended for travelers in Indore.",
     },
   ];
 

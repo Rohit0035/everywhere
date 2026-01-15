@@ -5,7 +5,7 @@ const pricingPlans = [
     {
         icon: <FaSuitcaseRolling size={40} color="#008080" className="mb-3" />,
         title: "Standard Luggage",
-        price: "₹99 / day",
+        price: "₹10 / day",
         desc: "Perfect for backpacks, suitcases, and regular cabin bags.",
         features: [
             "First 2 hours FREE",
@@ -16,7 +16,7 @@ const pricingPlans = [
     {
         icon: <FaBoxOpen size={40} color="#008080" className="mb-3" />,
         title: "Oversized Items",
-        price: "₹149 / day",
+        price: "₹15 / day",
         desc: "Ideal for large suitcases, instruments, strollers, etc.",
         features: [
             "Instant check-in",
@@ -27,7 +27,7 @@ const pricingPlans = [
     {
         icon: <FaCarSide size={40} color="#008080" className="mb-3" />,
         title: "Vehicle Storage",
-        price: "₹299 / day",
+        price: "₹30 / day",
         desc: "Safe & covered parking for two-wheelers or four-wheelers.",
         features: [
             "24/7 guarded space",
@@ -56,8 +56,11 @@ const PricingSection = () => {
                                 data-aos-duration='1500'>
                                 <div className="card-body text-center">
                                     {plan.icon}
-                                    <h5 className="fw-bold mt-2">{plan.title}</h5>
-                                    <h4 className="my-2 fs-1" style={{ color: '#008080' }}>{plan.price}</h4>
+                                    <h5 className="fw-bold mt-2 mb-0">{plan.title}</h5>
+                                    <h4 className="mt-2 mb-0 fs-1" style={{ color: '#008080' }}>{plan.price}</h4>
+                                     <div className="negligible">
+                                        Negligible
+                                     </div>
                                     <p>{plan.desc}</p>
                                     <ul className="list-unstyled text-start mt-3">
                                         {plan.features.map((feature, idx) => (
