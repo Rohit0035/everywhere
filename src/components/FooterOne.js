@@ -33,7 +33,7 @@ const FooterOne = () => {
             <div className='col-lg-4 col-md-6'>
               <div className='widget widget_about'>
                 <div className='thumb'>
-                  <img src='assets/img/common/logo.jpg' alt='img' class="rounded" />
+                  <img src='assets/img/common/logo.jpg' alt='img' className="rounded" />
                 </div>
                 <div className='details'>
                   <p>

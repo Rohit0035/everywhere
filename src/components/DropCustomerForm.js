@@ -8,7 +8,7 @@ import {
   FaTrashAlt,
   FaPlusCircle,
 } from "react-icons/fa";
-import { API_BASE_URL } from "../config/api";
+import { registerDropOrder } from "../services/apiService";
 
 const DropCustomerForm = () => {
   const [formData, setFormData] = useState({
@@ -16,17 +16,18 @@ const DropCustomerForm = () => {
     email: "",
     phone: "",
     storageLocation: "",
-    dropoffDate: "",
-    dropoffTime: "",
+    dropOffDate: "",
+    dropOffTime: "",
     pickupDate: "",
     pickupTime: "",
-    numberOfBags: 1,
-    bagSize: "Regular",
-    needPickupService: false,
+    noOfItems: 1,
+    itemSize: "Regular",
+    isPickupServiceNeeded: false,
     additionalNotes: "",
   });
 
   const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -58,40 +59,20 @@ const DropCustomerForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const formDataObj = new FormData();
-
-      // Append form data
-      formDataObj.append("fullName", formData.fullName);
-      formDataObj.append("email", formData.email);
-      formDataObj.append("phone", formData.phone);
-      formDataObj.append("storageLocation", formData.storageLocation);
-      formDataObj.append("dropoffDate", formData.dropoffDate);
-      formDataObj.append("dropoffTime", formData.dropoffTime);
-      formDataObj.append("pickupDate", formData.pickupDate);
-      formDataObj.append("pickupTime", formData.pickupTime);
-      formDataObj.append("numberOfBags", formData.numberOfBags);
-      formDataObj.append("bagSize", formData.bagSize);
-      formDataObj.append("needPickupService", formData.needPickupService ? "true" : "false");
-      formDataObj.append("additionalNotes", formData.additionalNotes);
-
-      // Append image file if available
-      if (images[0]) {
-        formDataObj.append("photo", images[0].file);
-      }
-
-      // Send the data
-      await axios.post(`${API_BASE_URL}dropcustomers`, formDataObj, {
-        headers: {
-          "Content-Type": "multipart/form-data", // Send as FormData for file upload
-        },
-      });
+      // Send the data as JSON
+      console.log("Submitting form data:", formData);
+      const response = await registerDropOrder(formData);
+      console.log("✅ Success:", response);
 
       navigate("/thankyou"); // Navigate to the thank you page
     } catch (err) {
       console.error("❌ Error:", err.response?.data || err.message);
       alert("Error: " + (err.response?.data?.error || err.message));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -105,8 +86,12 @@ const DropCustomerForm = () => {
           className="form-control"
           name="fullName"
           value={formData.fullName}
+          placeholder="John Doe"
           onChange={handleChange}
           required
+          pattern="[A-Za-z ]{2,}"
+          title="Please enter a valid name (letters and spaces only, minimum 2 characters)"
+          minLength="2"
         />
       </div>
       <div className="col-md-6">
@@ -116,8 +101,11 @@ const DropCustomerForm = () => {
           className="form-control"
           name="email"
           value={formData.email}
+          placeholder="john.doe@gmail.com"
           onChange={handleChange}
           required
+          pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+          title="Please enter a valid email address"
         />
       </div>
       <div className="col-md-6">
@@ -129,19 +117,27 @@ const DropCustomerForm = () => {
           value={formData.phone}
           onChange={handleChange}
           required
+          pattern="[0-9]{10}"
+          title="Please enter a valid 10-digit mobile number"
+          maxLength="10"
+          placeholder="e.g., 9876543210"
         />
       </div>
       <div className="col-md-6">
         <label className="form-label text-white">Storage Location</label>
-        <input
-          type="text"
-          className="form-control"
+        <select
+          className="form-select"
           name="storageLocation"
           value={formData.storageLocation}
           onChange={handleChange}
-          placeholder="e.g., Times Square NYC"
           required
-        />
+        >
+          <option value="">-- Select a location --</option>
+          <option value="Sagar, Madhya Pradesh">Sagar, Madhya Pradesh</option>
+          <option value="Damoh, Madhya Pradesh">Damoh, Madhya Pradesh</option>
+          <option value="Indore, Madhya Pradesh">Indore, Madhya Pradesh</option>
+          <option value="Bhopal, Madhya Pradesh">Bhopal, Madhya Pradesh</option>
+        </select>
       </div>
 
       {/* Date & time */}
@@ -152,8 +148,8 @@ const DropCustomerForm = () => {
         <input
           type="date"
           className="form-control"
-          name="dropoffDate"
-          value={formData.dropoffDate}
+          name="dropOffDate"
+          value={formData.dropOffDate}
           onChange={handleChange}
           required
         />
@@ -165,8 +161,8 @@ const DropCustomerForm = () => {
         <input
           type="time"
           className="form-control"
-          name="dropoffTime"
-          value={formData.dropoffTime}
+          name="dropOffTime"
+          value={formData.dropOffTime}
           onChange={handleChange}
           required
         />
@@ -201,24 +197,24 @@ const DropCustomerForm = () => {
       {/* Bag details */}
       <div className="col-md-3">
         <label className="form-label text-white">
-          <FaSuitcaseRolling className="me-1" /> Number of Bags
+          <FaSuitcaseRolling className="me-1" /> Number of Items
         </label>
         <input
           type="number"
           min="1"
           className="form-control"
-          name="numberOfBags"
-          value={formData.numberOfBags}
+          name="noOfItems"
+          value={formData.noOfItems}
           onChange={handleChange}
           required
         />
       </div>
       <div className="col-md-3">
-        <label className="form-label text-white">Bag Size</label>
+        <label className="form-label text-white">Item Size</label>
         <select
           className="form-select"
-          name="bagSize"
-          value={formData.bagSize}
+          name="itemSize"
+          value={formData.itemSize}
           onChange={handleChange}
         >
           <option>Small</option>
@@ -232,14 +228,14 @@ const DropCustomerForm = () => {
           <input
             className="form-check-input"
             type="checkbox"
-            name="needPickupService"
-            checked={formData.needPickupService}
+            name="isPickupServiceNeeded"
+            checked={formData.isPickupServiceNeeded}
             onChange={handleChange}
-            id="needPickupService"
+            id="isPickupServiceNeeded"
           />
           <label
             className="form-check-label text-white"
-            htmlFor="needPickupService"
+            htmlFor="isPickupServiceNeeded"
           >
             Need Pickup / Drop-off Service
           </label>
@@ -311,8 +307,16 @@ const DropCustomerForm = () => {
         <button
           type="submit"
           className="btn btn-border-base mt-0 text-light border-light"
+          disabled={isLoading}
         >
-          Confirm Booking
+          {isLoading ? (
+            <>
+              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Booking...
+            </>
+          ) : (
+            "Confirm Booking"
+          )}
         </button>
       </div>
     </form>

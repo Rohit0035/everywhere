@@ -1,337 +1,320 @@
 // File: PickupCustomerForm.js
-import React, { useState, useRef } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  FaCalendarAlt,
-  FaClock,
-  FaSuitcaseRolling,
-  FaTrashAlt,
-  FaPlusCircle,
-} from "react-icons/fa";
-import { API_BASE_URL } from "../config/api";
+import { FaPhone } from "react-icons/fa";
+import { fetchCustomersOrders, registerPickupOrder } from "../services/apiService";
 
 const PickupCustomerForm = () => {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    storageLocation: "",
-    dropoffDate: "",
-    dropoffTime: "",
-    pickupDate: "",
-    pickupTime: "",
-    numberOfBags: 1,
-    bagSize: "Regular",
-    needPickupService: false,
-    additionalNotes: "",
-  });
-
-  const [images, setImages] = useState([]);
-  const fileInputRef = useRef(null);
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [orders, setOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isPickupServiceNeeded, setIsPickupServiceNeeded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingOrders, setIsFetchingOrders] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
+  const handleFetchOrders = async () => {
+    if (!mobileNumber || mobileNumber.length < 10) {
+      alert("Please enter a valid mobile number");
+      return;
+    }
 
-  const handleAddImage = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleImageChange = (e) => {
-    if (e.target.files) {
-      const newImages = Array.from(e.target.files).map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-      }));
-      setImages((prev) => [...prev, ...newImages]);
+    setIsFetchingOrders(true);
+    try {
+      const response = await fetchCustomersOrders(mobileNumber);
+      const result = await response.json();
+      
+      if (response.ok && result.data && result.data.length > 0) {
+        setOrders(result.data);
+      } else {
+        alert("No orders found for this mobile number");
+        setOrders([]);
+        setSelectedOrder(null);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching orders:", err);
+      alert("Error fetching orders: " + err.message);
+      setOrders([]);
+    } finally {
+      setIsFetchingOrders(false);
     }
   };
 
-  const handleRemoveImage = (idx) => {
-    setImages((prev) => prev.filter((_, i) => i !== idx));
+  const getStatusInfo = (status) => {
+    const statusMap = {
+      'PENDING': {
+        allowed: false,
+        message: '⏳ This order is pending approval and has not arrived at our facility yet. Please wait for confirmation.',
+        color: 'warning',
+        icon: '⏳'
+      },
+      'ACCEPTED': {
+        allowed: false,
+        message: '✅ Your order has been accepted but has not arrived at our storage facility yet. Please wait until it arrives.',
+        color: 'info',
+        icon: '🚚'
+      },
+      'REJECTED': {
+        allowed: false,
+        message: '❌ This order has been rejected. Please contact customer support for more information.',
+        color: 'danger',
+        icon: '❌'
+      },
+      'RECEIVED': {
+        allowed: true,
+        message: '✨ Great! Your items have arrived and are safely stored. You can now request pickup.',
+        color: 'success',
+        icon: '✅'
+      },
+      'PICKUP_REQUESTED': {
+        allowed: false,
+        message: '📋 Pickup has already been requested for this order. Please wait for our team to contact you.',
+        color: 'warning',
+        icon: '📋'
+      },
+      'COMPLETE': {
+        allowed: false,
+        message: '✔️ This order is complete. Your items have already been picked up.',
+        color: 'secondary',
+        icon: '✔️'
+      }
+    };
+    return statusMap[status] || {
+      allowed: false,
+      message: '⚠️ Unknown order status. Please contact customer support.',
+      color: 'secondary',
+      icon: '⚠️'
+    };
+  };
+
+  const handleOrderSelect = (e) => {
+    const orderId = e.target.value;
+    const order = orders.find(o => o.id === parseInt(orderId));
+    setSelectedOrder(order);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!selectedOrder) {
+      alert("Please select an order");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const formDataObj = new FormData();
+      const pickupData = {
+        orderId: selectedOrder.id,
+        mobileNumber,
+        isPickupServiceNeeded,
+      };
 
-      // Append form data explicitly
-      formDataObj.append("fullName", formData.fullName);
-      formDataObj.append("email", formData.email);
-      formDataObj.append("phone", formData.phone);
-      formDataObj.append("storageLocation", formData.storageLocation);
-      formDataObj.append("dropoffDate", formData.dropoffDate);
-      formDataObj.append("dropoffTime", formData.dropoffTime);
-      formDataObj.append("pickupDate", formData.pickupDate);
-      formDataObj.append("pickupTime", formData.pickupTime);
-      formDataObj.append("numberOfBags", formData.numberOfBags);
-      formDataObj.append("bagSize", formData.bagSize);
-      formDataObj.append("needPickupService", formData.needPickupService ? "true" : "false");
-      formDataObj.append("additionalNotes", formData.additionalNotes);
+      const response = await registerPickupOrder(pickupData);
+      const data = await response.json();
 
-      // Append image file if available
-      if (images[0]) {
-        formDataObj.append("photo", images[0].file);
+      if (response.ok) {
+        console.log("✅ Pickup registered:", data);
+        navigate("/thankyou");
+      } else {
+        throw new Error(data.message || "Failed to register pickup");
       }
-
-      // Send the data
-      await axios.post(`${API_BASE_URL}pickupcustomers`, formDataObj, {
-        headers: {
-          "Content-Type": "multipart/form-data", // Send as FormData for file upload
-        },
-      });
-
-      // Reset form after success
-      setFormData({
-        fullName: "",
-        email: "",
-        phone: "",
-        storageLocation: "",
-        dropoffDate: "",
-        dropoffTime: "",
-        pickupDate: "",
-        pickupTime: "",
-        numberOfBags: 1,
-        bagSize: "Regular",
-        needPickupService: false,
-        additionalNotes: "",
-      });
-      setImages([]);
-
-      navigate("/thankyou");
     } catch (err) {
-      console.error("❌ Error:", err.response?.data || err.message);
-      alert("Error: " + (err.response?.data?.error || err.message));
+      console.error("❌ Error:", err);
+      alert("Error: " + err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <form className="row g-3 mt-3" onSubmit={handleSubmit}>
-      {/* Personal details */}
-      <div className="col-md-6">
-        <label className="form-label text-white">Full Name</label>
-        <input
-          type="text"
-          className="form-control"
-          name="fullName"
-          value={formData.fullName}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div className="col-md-6">
-        <label className="form-label text-white">Email</label>
-        <input
-          type="email"
-          className="form-control"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div className="col-md-6">
-        <label className="form-label text-white">Phone</label>
-        <input
-          type="tel"
-          className="form-control"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div className="col-md-6">
-        <label className="form-label text-white">Storage Location</label>
-        <input
-          type="text"
-          className="form-control"
-          name="storageLocation"
-          value={formData.storageLocation}
-          onChange={handleChange}
-          placeholder="e.g., Times Square NYC"
-          required
-        />
-      </div>
-
-      {/* Dates & times */}
-      <div className="col-md-3">
+      {/* Step 1: Mobile Number Input */}
+      <div className="col-12">
         <label className="form-label text-white">
-          <FaCalendarAlt className="me-1" /> Drop-off Date
+          <FaPhone className="me-1" /> Mobile Number
         </label>
-        <input
-          type="date"
-          className="form-control"
-          name="dropoffDate"
-          value={formData.dropoffDate}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div className="col-md-3">
-        <label className="form-label text-white">
-          <FaClock className="me-1" /> Drop-off Time
-        </label>
-        <input
-          type="time"
-          className="form-control"
-          name="dropoffTime"
-          value={formData.dropoffTime}
-          onChange={handleChange}
-          required
-        />
-      </div>
-
-      <div className="col-md-3">
-        <label className="form-label text-white">
-          <FaCalendarAlt className="me-1" /> Pickup Date
-        </label>
-        <input
-          type="date"
-          className="form-control"
-          name="pickupDate"
-          value={formData.pickupDate}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div className="col-md-3">
-        <label className="form-label text-white">
-          <FaClock className="me-1" /> Pickup Time
-        </label>
-        <input
-          type="time"
-          className="form-control"
-          name="pickupTime"
-          value={formData.pickupTime}
-          onChange={handleChange}
-          required
-        />
-      </div>
-
-      {/* Bag details */}
-      <div className="col-md-4">
-        <label className="form-label text-white">
-          <FaSuitcaseRolling className="me-1" /> Number of Bags
-        </label>
-        <input
-          type="number"
-          min="1"
-          className="form-control"
-          name="numberOfBags"
-          value={formData.numberOfBags}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      <div className="col-md-4">
-        <label className="form-label text-white">Bag Size</label>
-        <select
-          className="form-select"
-          name="bagSize"
-          value={formData.bagSize}
-          onChange={handleChange}
-        >
-          <option>Small</option>
-          <option>Regular</option>
-          <option>Large</option>
-          <option>Oversized</option>
-        </select>
-      </div>
-      <div className="col-md-4 d-flex align-items-center">
-        <div className="form-check mt-4">
+        <div className="input-group">
           <input
-            className="form-check-input"
-            type="checkbox"
-            name="needPickupService"
-            checked={formData.needPickupService}
-            onChange={handleChange}
-            id="pickupService"
+            type="tel"
+            className="form-control"
+            value={mobileNumber}
+            onChange={(e) => setMobileNumber(e.target.value)}
+            placeholder="Enter your mobile number"
+            required
+            pattern="[0-9]{10}"
+            title="Please enter a 10-digit mobile number"
           />
-          <label className="form-check-label text-white" htmlFor="pickupService">
-            Need Pickup Service
-          </label>
-        </div>
-      </div>
-
-      {/* Notes */}
-      <div className="col-12">
-        <label className="form-label text-white">Additional Notes</label>
-        <textarea
-          className="form-control"
-          rows="3"
-          name="additionalNotes"
-          value={formData.additionalNotes}
-          onChange={handleChange}
-        ></textarea>
-      </div>
-
-      {/* Image uploader */}
-      <div className="col-12">
-        <label className="form-label d-block mb-2 text-white">
-          Item / Vehicle Photos
-        </label>
-        <div className="d-flex flex-wrap gap-3 align-items-center">
-          {images.map((img, idx) => (
-            <div
-              key={idx}
-              className="position-relative border rounded overflow-hidden"
-              style={{ width: 90, height: 90 }}
-            >
-              <img
-                src={img.preview}
-                alt="preview"
-                className="w-100 h-100 object-fit-cover"
-              />
-              <button
-                type="button"
-                className="btn-sm btn-danger position-absolute top-0 end-0 p-1 rounded-0"
-                onClick={() => handleRemoveImage(idx)}
-                style={{ border: "unset" }}
-                aria-label="Remove image"
-              >
-                <FaTrashAlt color="#fff" />
-              </button>
-            </div>
-          ))}
-
-          {/* Add image button */}
           <button
             type="button"
-            className="btn-outline-light border-light d-flex flex-column justify-content-center align-items-center rounded-0"
-            style={{ width: 90, height: 90 }}
-            onClick={handleAddImage}
+            className="btn btn-border-base text-light border-light"
+            onClick={handleFetchOrders}
+            disabled={isFetchingOrders || !mobileNumber}
+            style={{ marginTop: 0 }}
           >
-            <FaPlusCircle size={32} />
-            <span className="small">Add</span>
+            {isFetchingOrders ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Fetching...
+              </>
+            ) : (
+              "Fetch Orders"
+            )}
           </button>
         </div>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          ref={fileInputRef}
-          className="d-none"
-          onChange={handleImageChange}
-        />
       </div>
 
-      <div className="col-12 text-center mt-4">
-        <button
-          type="submit"
-          className="btn btn-border-base text-light border-light"
-        >
-          Confirm Booking
-        </button>
-      </div>
+      {/* Step 2: Order Selection Dropdown */}
+      {orders.length > 0 && (
+        <>
+          <div className="col-12 mt-3">
+            <div className="alert" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', border: '1px solid rgba(255, 255, 255, 0.3)', borderRadius: '6px' }}>
+              <p className="text-white mb-0">
+                ✅ <strong>Found {orders.length} order{orders.length > 1 ? 's' : ''}</strong> associated with this mobile number
+              </p>
+            </div>
+          </div>
+          <div className="col-12">
+            <label className="form-label text-white fw-bold mb-3">
+              📋 Select Your Order to Schedule Pickup
+            </label>
+            <div className="position-relative">
+              <select
+                className="form-select form-select-lg"
+                onChange={handleOrderSelect}
+                value={selectedOrder?.id || ""}
+                required
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <option value="" style={{ color: '#666' }}>🔍 Choose an order from the list below...</option>
+                {orders.map((order) => (
+                  <option key={order.id} value={order.id} style={{ padding: '10px' }}>
+                    🆔 #{order.id} | 📍 {order.storage_location} | 📦 {order.no_of_items || 'N/A'} item(s) | 🔖 {order.order_status}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {!selectedOrder && (
+              <small className="text-white-50 d-block mt-2">
+                💡 Tip: Select an order to view its complete details below
+              </small>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Step 3: Display Selected Order Details */}
+      {selectedOrder && (
+        <>
+          <div className="col-12">
+            <div className="card text-white p-4" style={{ backgroundColor: 'rgba(148, 128, 128, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '8px' }}>
+              <h5 className="mb-3 pb-2 text-white" style={{ borderBottom: '2px solid rgba(255, 255, 255, 0.3)' }}>
+                📦 Order Details
+              </h5>
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <div className="mb-2">
+                    <small className="text-white-50">Order ID</small>
+                    <p className="mb-0 fw-bold">#{selectedOrder.id}</p>
+                  </div>
+                  <div className="mb-2">
+                    <small className="text-white-50">Customer ID</small>
+                    <p className="mb-0 fw-bold">{selectedOrder.customer_id}</p>
+                  </div>
+                  <div className="mb-2">
+                    <small className="text-white-50">Storage Location</small>
+                    <p className="mb-0 fw-bold">📍 {selectedOrder.storage_location}</p>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="mb-2">
+                    <small className="text-white-50">Number of Items</small>
+                    <p className="mb-0 fw-bold">{selectedOrder.no_of_items || 'N/A'} {selectedOrder.item_size ? `(${selectedOrder.item_size})` : ''}</p>
+                  </div>
+                  <div className="mb-2">
+                    <small className="text-white-50">Pickup Date & Time</small>
+                    <p className="mb-0 fw-bold">
+                      {selectedOrder.pickup_date ? new Date(selectedOrder.pickup_date).toLocaleDateString() : 'N/A'} 
+                      {selectedOrder.pickup_time ? ` at ${selectedOrder.pickup_time}` : ''}
+                    </p>
+                  </div>
+                  <div className="mb-2">
+                    <small className="text-white-50">Status</small>
+                    <p className="mb-0">
+                      <span className={`badge bg-${getStatusInfo(selectedOrder.order_status).color} me-2`}>
+                        {selectedOrder.order_status}
+                      </span>
+                      <span className={`badge ${selectedOrder.payment_status === 'unpaid' ? 'bg-danger' : 'bg-success'}`}>
+                        {selectedOrder.payment_status.toUpperCase()}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Status Info Message */}
+          <div className="col-12">
+            <div className={`alert alert-${getStatusInfo(selectedOrder.order_status).color}`} style={{ borderRadius: '8px', border: '2px solid rgba(255, 255, 255, 0.2)' }}>
+              <div className="d-flex align-items-start">
+                <div className="me-3" style={{ fontSize: '24px' }}>
+                  {getStatusInfo(selectedOrder.order_status).icon}
+                </div>
+                <div>
+                  <strong>Order Status Information</strong>
+                  <p className="mb-0 mt-1">{getStatusInfo(selectedOrder.order_status).message}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Step 4: Pickup Service Checkbox */}
+      {selectedOrder && getStatusInfo(selectedOrder.order_status).allowed && (
+        <div className="col-12">
+          <div className="form-check">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              checked={isPickupServiceNeeded}
+              onChange={(e) => setIsPickupServiceNeeded(e.target.checked)}
+              id="pickupServiceNeeded"
+            />
+            <label className="form-check-label text-white" htmlFor="pickupServiceNeeded">
+              I need pickup service (we'll deliver to your location)
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Submit Button */}
+      {selectedOrder && getStatusInfo(selectedOrder.order_status).allowed && (
+        <div className="col-12 text-center mt-4">
+          <button
+            type="submit"
+            className="btn btn-border-base mt-0 text-light border-light"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Processing...
+              </>
+            ) : (
+              "Confirm Pickup"
+            )}
+          </button>
+        </div>
+      )}
     </form>
   );
 };
