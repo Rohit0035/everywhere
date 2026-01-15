@@ -149,7 +149,7 @@ const FooterOne = () => {
       </footer>
 
       <div className="whatsicon">
-        <Link to="https://api.whatsapp.com/send/?phone=8349107395&text&type=phone_number&app_absent=0">
+        <Link to="https://api.whatsapp.com" className="text-white">
           <FaWhatsapp size={45} />
         </Link>
       </div>
@@ -157,22 +157,22 @@ const FooterOne = () => {
       <div className="socialicon">
         <ul className=''>
           <li>
-            <a href='https://www.facebook.com/share/EttKVKC1FpbzVYSE/?mibextid=qi2'>
+            <a href='https://www.facebook.com' className="text-white"> 
               <FaFacebookF />
             </a>
           </li>
           <li>
-            <a href='https://twitter.com/i/flow/login?redirect_after_login=%2Fclouebytes'>
+            <a href='https://twitter.com' className="text-white">
               <FaTwitter />
             </a>
           </li>
           <li>
-            <a href='https://www.instagram.com/clouebytes/?igsh=MWQzZ25weDhucnozMA%3D%3D'>
+            <a href='https://www.instagram.com' className="text-white">
               <FaInstagram />
             </a>
           </li>
           <li>
-            <a href='https://www.linkedin.com/company/clouebytes/'>
+            <a href='https://www.linkedin.com' className="text-white">
               <FaLinkedinIn />
             </a>
           </li>
